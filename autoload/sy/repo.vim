@@ -498,7 +498,13 @@ function! s:wrap_cmd(bufnr, vcs, cmd) abort
 endfunction
 
 " s:get_vcs_path {{{1
-function! s:get_vcs_path(bufnr, vcs) abort
+function! s:get_vcs_path(bufnr, vcs, cmd) abort
+  if a:vcs == 'arc' && stridx(a:cmd, 'show') != -1
+    let root = substitute(system('arc root'), '\n', '', '')
+    echo substitute(getbufvar(a:bufnr, 'sy').info.path, root, '', '')
+    return substitute(getbufvar(a:bufnr, 'sy').info.path, root, '', '')
+  endif
+
   return (a:vcs =~# '\v(git|arc|cvs|accurev|tfs|yadm)')
         \ ? getbufvar(a:bufnr, 'sy').info.file
         \ : getbufvar(a:bufnr, 'sy').info.path
@@ -507,7 +513,7 @@ endfunction
 " s:get_base_cmd {{{1
 function! s:get_base_cmd(bufnr, vcs, vcs_cmds) abort
   let cmd = a:vcs_cmds[a:vcs]
-  let cmd = s:replace(cmd, '%f', s:get_vcs_path(a:bufnr, a:vcs))
+  let cmd = s:replace(cmd, '%f', s:get_vcs_path(a:bufnr, a:vcs, cmd))
   let cmd = s:replace(cmd, '%d', s:difftool)
   let cmd = s:replace(cmd, '%n', s:devnull)
   return cmd
@@ -635,7 +641,7 @@ let s:default_vcs_cmds = {
 
 let s:default_vcs_cmds_diffmode = {
       \ 'git':      'git show HEAD:./%f',
-      \ 'arc':      'arc show HEAD:./%f',
+      \ 'arc':      'arc show HEAD:%f',
       \ 'yadm':     'yadm show HEAD:./%f',
       \ 'hg':       'hg cat %f',
       \ 'svn':      'svn cat %f',
